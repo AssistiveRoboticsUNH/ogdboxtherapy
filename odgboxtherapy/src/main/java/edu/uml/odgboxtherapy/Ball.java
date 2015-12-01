@@ -4,7 +4,7 @@ package edu.uml.odgboxtherapy;
  * Created by chris on 10/20/15.
  */
 public class Ball {
-    public static final int WIDTH = 32, HEIGHT = 32;
+    public static final int DIAMETER = 100;
     public final int SCREEN_WIDTH, SCREEN_HEIGHT;
     public static final int NOT_FOUND_COORD = -1337;
     public static final double SPEED = 45;

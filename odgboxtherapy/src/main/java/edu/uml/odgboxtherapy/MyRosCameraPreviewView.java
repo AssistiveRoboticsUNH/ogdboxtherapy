@@ -30,21 +30,17 @@ import org.ros.node.NodeMain;
  * @author damonkohler@google.com (Damon Kohler)
  */
 public class MyRosCameraPreviewView extends CameraPreviewView implements NodeMain {
-  public static MyRosCameraPreviewView instance;
 
   public MyRosCameraPreviewView(Context context) {
     super(context);
-    instance = this;
   }
 
   public MyRosCameraPreviewView(Context context, AttributeSet attrs) {
     super(context, attrs);
-    instance = this;
   }
 
   public MyRosCameraPreviewView(Context context, AttributeSet attrs, int defStyle) {
     super(context, attrs, defStyle);
-    instance = this;
   }
 
   @Override

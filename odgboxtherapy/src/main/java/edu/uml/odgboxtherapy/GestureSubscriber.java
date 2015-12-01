@@ -9,28 +9,22 @@ import org.ros.node.Node;
 import org.ros.node.NodeMain;
 import org.ros.node.topic.Subscriber;
 
+import java.util.zip.CheckedOutputStream;
+
 /**
  * Created by chris on 9/18/15.
  */
 
 public class GestureSubscriber implements NodeMain {
 
-    /* static reference to the only gesture subscriber that should be in use */
-    public static GestureSubscriber instance;
+    private final Board gameBoard;
 
     /* contains the last pose number read from myo */
     public int lastGesture = 0;
     public static int GRASPING = 1;
 
-    public static GestureSubscriber getInstance() {
-        if(instance == null) {
-            synchronized (GestureSubscriber.class) {
-                if (instance == null) {
-                    instance = new GestureSubscriber();
-                }
-            }
-        }
-        return instance;
+    public GestureSubscriber(Board gameBoard) {
+        this.gameBoard = gameBoard;
     }
 
     @Override
@@ -43,11 +37,10 @@ public class GestureSubscriber implements NodeMain {
                 int prevLastGesture = lastGesture;
                 lastGesture = message.getData();
 
-                if(SampleCameraControl.getInstance() != null &&
-                        SampleCameraControl.getInstance().gameState == SampleCameraControl.State.INITIAL
-                        && lastGesture == 1) {
-                    SampleCameraControl.getInstance().gameState = SampleCameraControl.State.LVL1;
-                }
+//                if(SampleCameraControl.getInstance().gameState == SampleCameraControl.State.INITIAL
+//                        && lastGesture == 1) {
+//                    SampleCameraControl.getInstance().gameState = SampleCameraControl.State.LVL1;
+//                }
 
                 Log.d("myODG", "I heard: \"" + message + "\"");
             }

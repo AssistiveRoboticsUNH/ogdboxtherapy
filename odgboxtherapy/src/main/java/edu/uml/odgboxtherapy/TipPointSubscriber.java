@@ -15,18 +15,10 @@ import org.ros.node.topic.Subscriber;
 
 public class TipPointSubscriber implements NodeMain {
 
-    private static TipPointSubscriber instance;
-    private Ball ball = new Ball();
+    private final Board gameBoard;
 
-    public static TipPointSubscriber getInstance() {
-        if(instance == null) {
-            synchronized (TipPointSubscriber.class) {
-                if (instance == null) {
-                    instance = new TipPointSubscriber();
-                }
-            }
-        }
-        return instance;
+    public TipPointSubscriber(Board gameBoard) {
+        this.gameBoard = gameBoard;
     }
 
     @Override
@@ -37,21 +29,22 @@ public class TipPointSubscriber implements NodeMain {
             public void onNewMessage(geometry_msgs.Point message) {
 
                 //do not update ball's position if the ball is not found
-                if(ball == null || message.getX() == Ball.NOT_FOUND_COORD
-                        || message.getY() == Ball.NOT_FOUND_COORD
-                        || GestureSubscriber.getInstance().lastGesture != GestureSubscriber.GRASPING) {
-                    return;
-                }
+//                if(ball == null || message.getX() == Ball.NOT_FOUND_COORD
+//                        || message.getY() == Ball.NOT_FOUND_COORD
+//                        || GestureSubscriber.getInstance().lastGesture != GestureSubscriber.GRASPING) {
+//                    return;
+//                }
 
-                ball.setTargetX(message.getX() * CompressedImagePublisher.xmag + CompressedImagePublisher.xtrans);
-                ball.setTargetY(message.getY() * CompressedImagePublisher.ymag + CompressedImagePublisher.ytrans);
+                gameBoard.getBall().setTargetX(
+                        message.getX() * CompressedImagePublisher.xmag + CompressedImagePublisher.xtrans);
+                gameBoard.getBall().setTargetY(
+                        message.getY() * CompressedImagePublisher.ymag + CompressedImagePublisher.ytrans);
 
                 //TODO: IMPLEMENT THIS AGAIN FOR ODG
                 //SampleCameraControl.getInstance().processEndPoint(
                 //        (int) ball.getX(), (int) ball.getY());
 
                 Log.d("myODG", "I heard: " + message.getX() + " " + message.getY());
-                Log.d("myODG", "ball is: " + ball.getX() + " " + ball.getY());
             }
         });
     }
@@ -74,13 +67,5 @@ public class TipPointSubscriber implements NodeMain {
     @Override
     public GraphName getDefaultNodeName() {
         return GraphName.of("sony_ball_motion_sub");
-    }
-
-    public void setBall(Ball b) {
-        ball = b;
-    }
-
-    public Ball getBall() {
-        return ball;
     }
 }

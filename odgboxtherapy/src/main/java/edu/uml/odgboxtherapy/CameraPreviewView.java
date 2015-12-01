@@ -45,7 +45,7 @@ public class CameraPreviewView extends ViewGroup {
 
   private final static double ASPECT_TOLERANCE = 0.1;
 
-  private SurfaceHolder camSurfaceHolder, warpedSurfaceHolder;
+  private SurfaceHolder camSurfaceHolder;
   private Camera camera;
   private Size previewSize;
   private byte[] previewBuffer;
@@ -90,8 +90,7 @@ public class CameraPreviewView extends ViewGroup {
 
     SurfaceView camSurfaceView = new SurfaceView(context);
 
-    camSurfaceView.setZOrderOnTop(true);
-    camSurfaceView.getHolder().setFormat(PixelFormat.TRANSPARENT);
+    //camSurfaceView.getHolder().setFormat(PixelFormat.TRANSPARENT);
     addView(camSurfaceView);
 
     camSurfaceHolder = camSurfaceView.getHolder();
@@ -129,6 +128,10 @@ public class CameraPreviewView extends ViewGroup {
 
   public void setRawImageListener(RawImageListener rawImageListener) {
     this.rawImageListener = rawImageListener;
+  }
+
+  public RawImageListener getRawImageListener() {
+    return rawImageListener;
   }
 
   public Size getPreviewSize() {
@@ -222,10 +225,6 @@ public class CameraPreviewView extends ViewGroup {
         child.layout(0, (height - scaledChildHeight) / 2, width, (height + scaledChildHeight) / 2);
       }
     }
-  }
-
-  public SurfaceHolder getWarpedSurfaceHolder() {
-    return warpedSurfaceHolder;
   }
 
 }

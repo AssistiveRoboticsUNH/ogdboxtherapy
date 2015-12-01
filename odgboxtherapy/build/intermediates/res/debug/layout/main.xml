@@ -4,24 +4,31 @@
     android:layout_height="fill_parent"
     android:orientation="horizontal" >
 
-    <edu.uml.odgboxtherapy.MyRosCameraPreviewView
-        android:id="@+id/ros_camera_preview_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" />
+    <!--
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal" >
 
+        <edu.uml.odgboxtherapy.MyRosCameraPreviewView
+            android:id="@+id/ros_camera_preview_view"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" />
+
+    </FrameLayout>
+
+    <edu.uml.odgboxtherapy.GameView
+        android:id="@+id/game_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    -->
+
+    <!--
     <SurfaceView
         android:id="@+id/warped_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:background="#ff070b" />
-
-
-    <!--
-    <View
-        android:id="@+id/simpleDrawingView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@android:color/holo_green_light"  />
     -->
 
 </FrameLayout><!-- From: file:/home/chris/indigo/rja_test/jordan_sony_ws/src/odgboxtherapy/odgboxtherapy/src/main/res/layout/main.xml -->

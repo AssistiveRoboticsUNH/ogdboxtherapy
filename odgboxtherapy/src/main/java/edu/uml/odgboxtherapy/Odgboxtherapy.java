@@ -23,8 +23,10 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import org.ros.android.RosActivity;
@@ -40,10 +42,12 @@ import java.io.IOException;
  */
 public class Odgboxtherapy extends RosActivity {
 
-    public static SurfaceView warpedView;
     private int cameraId;
     private MyRosCameraPreviewView rosCameraPreviewView;
+
     private Board gameBoard;
+    private GestureSubscriber gestureSub;
+    private TipPointSubscriber tipPointSub;
 
     public Odgboxtherapy() {
         super("CameraTutorial", "CameraTutorial");
@@ -55,13 +59,28 @@ public class Odgboxtherapy extends RosActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
-        rosCameraPreviewView = (MyRosCameraPreviewView) findViewById(R.id.ros_camera_preview_view);
-        warpedView = (SurfaceView) findViewById(R.id.warped_view);
+        //rosCameraPreviewView = (MyRosCameraPreviewView) findViewById(R.id.ros_camera_preview_view);
+
+        //sets up views
+        FrameLayout frame = new FrameLayout(this);
+        addContentView(frame, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        rosCameraPreviewView = new MyRosCameraPreviewView(this);
+        frame.addView(rosCameraPreviewView);
+
+        //creates game board view
+//        GameView drawontop = new GameView(this);
+//        addContentView(drawontop, new ViewGroup.LayoutParams(
+//                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+//        drawontop.setVisibility(View.VISIBLE);
+//        drawontop.bringToFront();
+
+  //      gameBoard = drawontop.getBoard();
+        gameBoard = new Board();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_UP) {
+        if (event.getAction() == MotionEvent.ACTION_UP && rosCameraPreviewView != null) {
             int numberOfCameras = Camera.getNumberOfCameras();
             final Toast toast;
             if (numberOfCameras > 1) {
@@ -87,12 +106,18 @@ public class Odgboxtherapy extends RosActivity {
         cameraId = 0;
 
         rosCameraPreviewView.setCamera(Camera.open(cameraId));
+
+        gestureSub = new GestureSubscriber(gameBoard);
+        tipPointSub = new TipPointSubscriber(gameBoard);
+
         try {
             java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
             java.net.InetAddress local_network_address = socket.getLocalAddress();
             socket.close();
             NodeConfiguration nodeConfiguration =
                     NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
+            nodeMainExecutor.execute(gestureSub, nodeConfiguration);
+            nodeMainExecutor.execute(tipPointSub, nodeConfiguration);
             nodeMainExecutor.execute(rosCameraPreviewView, nodeConfiguration);
         } catch (IOException e) {
             // Socket problem

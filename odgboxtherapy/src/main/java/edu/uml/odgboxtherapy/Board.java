@@ -44,4 +44,8 @@ public class Board {
     public int getHeight() {
         return width;
     }
+
+    public void update() {
+        b.updatePos();
+    }
 }
