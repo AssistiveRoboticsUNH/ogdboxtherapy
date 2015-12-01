@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -29,14 +30,12 @@ public class GameView extends View {
 
     public GameView(Context context) {
         super(context);
-        setBackgroundColor(Color.BLACK);
 
-        paint = new Paint();
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.GREEN);
-        paint.setTextSize(120);
+        setupPaint();
 
         board = new Board();
+        setupBoard();
+
         state = State.PLAY;
     }
 
@@ -47,7 +46,7 @@ public class GameView extends View {
     @Override
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-/*
+
         switch(state) {
             case START:
                 drawText(canvas, "Squeeze to begin");
@@ -59,10 +58,10 @@ public class GameView extends View {
                 drawText(canvas, "Great Job!");
                 break;
         }
-*/
+
         //calls next draw
         invalidate();
-        Log.d("myODG", "drawing...");
+        Log.d("myODG", "ball " + board.getBall().getX() + " " + board.getBall().getY());
     }
 
     /**
@@ -74,14 +73,48 @@ public class GameView extends View {
         Rect bounds = new Rect();
         paint.getTextBounds(msg, 0, msg.length(), bounds); //gets width&height of provided text
 
-        canvas.drawText(msg, getWidth()/2 - bounds.width()/2,
-                getHeight()/2 - bounds.height()/2, paint);
+        canvas.drawText(msg, getWidth() / 2 - bounds.width() / 2,
+                getHeight() / 2 - bounds.height() / 2, paint);
     }
 
     void drawBoard(Canvas canvas) {
-        Ball b = board.getBall();
-        canvas.drawCircle((float) b.getX() - Ball.DIAMETER/2, (float)b.getY() - Ball.DIAMETER/2, Ball.DIAMETER/2, paint);
+        if(board.isVisible()) {
+            Ball b = board.getBall();
+            Point objective = board.getCurrentObjective();
+
+            paint.setColor(Color.RED);
+            canvas.drawCircle((float) objective.x, (float) objective.y, Ball.DIAMETER / 2, paint);
+
+            paint.setColor(Color.GREEN);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle((float) b.getX(), (float) b.getY(), Ball.DIAMETER / 2, paint);
+        }
+
+        paint.setColor(Color.RED);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect(0, 0, board.getWidth(), board.getHeight(), paint);
+
         board.update();
+    }
+
+    void setupPaint() {
+        setBackgroundColor(Color.BLACK);
+
+        paint = new Paint();
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.GREEN);
+        paint.setTextSize(120);
+        paint.setStrokeWidth(10);
+    }
+
+    void setupBoard() {
+        final int PADDING = 50;
+
+        board.addAnObjective(PADDING + Ball.DIAMETER/2, board.getHeight()/2 - Ball.DIAMETER/2);
+        board.addAnObjective(board.getWidth() - PADDING - Ball.DIAMETER/2, board.getHeight()/2 - Ball.DIAMETER/2);
+        board.addAnObjective(PADDING + Ball.DIAMETER/2, board.getHeight()/2 - Ball.DIAMETER/2);
+        board.addAnObjective(board.getWidth()/2, PADDING + Ball.DIAMETER/2);
+        board.addAnObjective(board.getWidth()/2, board.getHeight() - PADDING - Ball.DIAMETER/2);
     }
 
     public Board getBoard() {

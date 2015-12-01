@@ -29,20 +29,16 @@ public class TipPointSubscriber implements NodeMain {
             public void onNewMessage(geometry_msgs.Point message) {
 
                 //do not update ball's position if the ball is not found
-//                if(ball == null || message.getX() == Ball.NOT_FOUND_COORD
-//                        || message.getY() == Ball.NOT_FOUND_COORD
-//                        || GestureSubscriber.getInstance().lastGesture != GestureSubscriber.GRASPING) {
-//                    return;
-//                }
+                if(message.getX() == Ball.NOT_FOUND_COORD
+                        || message.getY() == Ball.NOT_FOUND_COORD) {
+                        // || GestureSubscriber.lastGesture != GestureSubscriber.GRASPING) { TODO implement grasping
+                    return;
+                }
 
-                gameBoard.getBall().setTargetX(
-                        message.getX() * CompressedImagePublisher.xmag + CompressedImagePublisher.xtrans);
-                gameBoard.getBall().setTargetY(
-                        message.getY() * CompressedImagePublisher.ymag + CompressedImagePublisher.ytrans);
-
-                //TODO: IMPLEMENT THIS AGAIN FOR ODG
-                //SampleCameraControl.getInstance().processEndPoint(
-                //        (int) ball.getX(), (int) ball.getY());
+                gameBoard.getBall().setTargetX( CompressedImagePublisher.xtrans
+                        + message.getX() * CompressedImagePublisher.xmag / CompressedImagePublisher.SCALE_FACTOR);
+                gameBoard.getBall().setTargetY( CompressedImagePublisher.ytrans
+                        + message.getY() * CompressedImagePublisher.ymag / CompressedImagePublisher.SCALE_FACTOR);
 
                 Log.d("myODG", "I heard: " + message.getX() + " " + message.getY());
             }

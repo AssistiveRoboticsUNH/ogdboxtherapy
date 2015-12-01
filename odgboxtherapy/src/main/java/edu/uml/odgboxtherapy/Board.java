@@ -13,6 +13,7 @@ public class Board {
     private final Ball b;
     private int currentObjective;
     private final int width, height;
+    private int animationTimer;
 
     public Board() {
         this(1280, 720);
@@ -22,6 +23,7 @@ public class Board {
         this.width = width;
         this.height = height;
         b = new Ball(this);
+        objectives = new ArrayList<Point>();
     }
 
     public boolean addAnObjective(int x, int y) {
@@ -42,10 +44,32 @@ public class Board {
     }
 
     public int getHeight() {
-        return width;
+        return height;
     }
 
     public void update() {
         b.updatePos();
+
+        if(animationTimer > 0) {
+            if(--animationTimer <= 0) {
+                if (++currentObjective >= objectives.size()) {
+                    currentObjective = 0;
+                    //change gameView
+                }
+
+                b.unlock();
+            }
+        } else if( b.isTouching(getCurrentObjective()) ) {
+            animationTimer = 19;
+            b.lock();
+        }
+    }
+
+    public boolean isVisible() {
+        return animationTimer <= 0 || animationTimer / 5 % 2 != 0;
+    }
+
+    public Point getCurrentObjective() {
+        return objectives.get(currentObjective);
     }
 }

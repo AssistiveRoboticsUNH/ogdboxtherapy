@@ -20,7 +20,7 @@ public class GestureSubscriber implements NodeMain {
     private final Board gameBoard;
 
     /* contains the last pose number read from myo */
-    public int lastGesture = 0;
+    public static int lastGesture = 0;
     public static int GRASPING = 1;
 
     public GestureSubscriber(Board gameBoard) {

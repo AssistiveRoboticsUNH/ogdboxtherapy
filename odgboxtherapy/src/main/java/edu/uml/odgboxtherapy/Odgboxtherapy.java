@@ -68,14 +68,13 @@ public class Odgboxtherapy extends RosActivity {
         frame.addView(rosCameraPreviewView);
 
         //creates game board view
-//        GameView drawontop = new GameView(this);
-//        addContentView(drawontop, new ViewGroup.LayoutParams(
-//                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-//        drawontop.setVisibility(View.VISIBLE);
-//        drawontop.bringToFront();
+        GameView drawontop = new GameView(this);
+        addContentView(drawontop, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        drawontop.setVisibility(View.VISIBLE);
+        drawontop.bringToFront();
 
-  //      gameBoard = drawontop.getBoard();
-        gameBoard = new Board();
+        gameBoard = drawontop.getBoard();
     }
 
     @Override

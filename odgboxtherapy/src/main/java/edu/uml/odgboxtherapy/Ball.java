@@ -1,5 +1,7 @@
 package edu.uml.odgboxtherapy;
 
+import android.graphics.Point;
+
 /**
  * Created by chris on 10/20/15.
  */
@@ -7,7 +9,7 @@ public class Ball {
     public static final int DIAMETER = 100;
     public final int SCREEN_WIDTH, SCREEN_HEIGHT;
     public static final int NOT_FOUND_COORD = -1337;
-    public static final double SPEED = 45;
+    public static final double SPEED = 80;
 
     /*the coordinates of center point of the object*/
     private double x, y, targetX, targetY;
@@ -60,7 +62,7 @@ public class Ball {
 
     public void updatePos() {
 
-        if(y == targetY && x == targetX) {
+        if((y == targetY && x == targetX) || targetY == NOT_FOUND_COORD || targetX == NOT_FOUND_COORD) {
             return;
         }
 
@@ -88,6 +90,15 @@ public class Ball {
         double moveX = Math.cos(theta) * SPEED, moveY = Math.sin(theta) * SPEED;
 
         moveCenterBy(moveX, moveY);
+    }
+
+    /**
+     * determines if this ball is touching an objective
+     * @param objective location of current objective. assumes objective is the same diameter as ball
+     * @return if they are touching
+     */
+    public boolean isTouching(Point objective) {
+        return Math.sqrt(Math.pow(objective.x-x, 2) + Math.pow(objective.y-y, 2)) < DIAMETER;
     }
 
     /**
