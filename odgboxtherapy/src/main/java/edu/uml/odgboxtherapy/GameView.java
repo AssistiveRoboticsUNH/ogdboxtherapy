@@ -60,8 +60,7 @@ public class GameView extends View {
         }
 
         //calls next draw
-        invalidate();
-        Log.d("myODG", "ball " + board.getBall().getX() + " " + board.getBall().getY());
+        //invalidate();
     }
 
     /**
@@ -98,7 +97,7 @@ public class GameView extends View {
     }
 
     void setupPaint() {
-        setBackgroundColor(Color.BLACK);
+        //setBackgroundColor(Color.BLACK);
 
         paint = new Paint();
         paint.setStyle(Paint.Style.FILL);

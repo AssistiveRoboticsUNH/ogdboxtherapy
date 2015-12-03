@@ -24,6 +24,7 @@ import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -53,6 +54,7 @@ public class CameraPreviewView extends ViewGroup {
   private BufferingPreviewCallback bufferingPreviewCallback;
 
   private final class BufferingPreviewCallback implements PreviewCallback {
+    private long lastTime = System.nanoTime();
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
       Preconditions.checkArgument(camera == CameraPreviewView.this.camera);
@@ -61,6 +63,9 @@ public class CameraPreviewView extends ViewGroup {
         rawImageListener.onNewRawImage(data, previewSize);
       }
       camera.addCallbackBuffer(previewBuffer);
+
+      double fps = 1000000000.0 / (lastTime - (lastTime = System.nanoTime()));
+      Log.d("myODG", "FPS: " + fps);
     }
   }
 
