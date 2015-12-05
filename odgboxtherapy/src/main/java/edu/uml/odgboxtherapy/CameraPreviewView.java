@@ -36,6 +36,8 @@ import org.ros.exception.RosRuntimeException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Displays preview frames from the camera.
@@ -49,20 +51,29 @@ public class CameraPreviewView extends ViewGroup {
   private SurfaceHolder camSurfaceHolder;
   private Camera camera;
   private Size previewSize;
-  private byte[] previewBuffer;
+  private byte[][] previewBuffer;
   private RawImageListener rawImageListener;
   private BufferingPreviewCallback bufferingPreviewCallback;
 
   private final class BufferingPreviewCallback implements PreviewCallback {
     private long lastTime = System.nanoTime();
+    private Executor e = Executors.newFixedThreadPool(4);
+
     @Override
-    public void onPreviewFrame(byte[] data, Camera camera) {
+    public void onPreviewFrame(final byte[] data, final Camera camera) {
       Preconditions.checkArgument(camera == CameraPreviewView.this.camera);
-      Preconditions.checkArgument(data == previewBuffer);
-      if (rawImageListener != null) {
-        rawImageListener.onNewRawImage(data, previewSize);
-      }
-      camera.addCallbackBuffer(previewBuffer);
+
+      e.execute(new Runnable() {
+        @Override
+        public void run() {
+
+          if (rawImageListener != null) {
+            rawImageListener.onNewRawImage(data, previewSize);
+          }
+          camera.addCallbackBuffer(data);
+
+        }
+      });
 
       double fps = 1000000000.0 / (lastTime - (lastTime = System.nanoTime()));
       Log.d("myODG", "FPS: " + fps);
@@ -202,8 +213,11 @@ public class CameraPreviewView extends ViewGroup {
   private void setupBufferingPreviewCallback() {
     int format = camera.getParameters().getPreviewFormat();
     int bits_per_pixel = ImageFormat.getBitsPerPixel(format);
-    previewBuffer = new byte[previewSize.height * previewSize.width * bits_per_pixel / 8];
-    camera.addCallbackBuffer(previewBuffer);
+
+    previewBuffer = new byte[4][previewSize.height * previewSize.width * bits_per_pixel / 8];
+    for (byte[] aPreviewBuffer : previewBuffer)
+      camera.addCallbackBuffer(aPreviewBuffer);
+
     camera.setPreviewCallbackWithBuffer(bufferingPreviewCallback);
   }
 

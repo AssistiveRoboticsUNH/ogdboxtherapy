@@ -39,165 +39,110 @@ import org.ros.node.topic.Publisher;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * Publishes preview frames.
- * 
+ *
  * @author damonkohler@google.com (Damon Kohler)
  */
 class CompressedImagePublisher implements RawImageListener {
 
-  /* ROS objects */
-  private final ConnectedNode connectedNode;
-  private final Publisher<sensor_msgs.CompressedImage> imagePublisher;
-  private final Publisher<sensor_msgs.CameraInfo> cameraInfoPublisher;
+    /* ROS objects */
+    private final ConnectedNode connectedNode;
+    private final Publisher<sensor_msgs.CompressedImage> imagePublisher;
 
-  /* image warping parameters */
-  public static final double xmag = 2.2, ymag = 2;
-  public static final int xtrans = -750, ytrans = -700;
-  public static final double SCALE_FACTOR = 0.3;
+    /* image warping parameters */
+    public static final double xmag = 2.2, ymag = 2;
+    public static final int xtrans = -750, ytrans = -700;
+    public static final double SCALE_FACTOR = .25;
 
-  private int skipFrame = 0;
+    /* image processing variables */
+    private ChannelBufferOutputStream stream;
+    private Rect rect;
+    private byte[] scaled;
 
-  /* image processing variables */
-  private byte[] rawImageBuffer;
-  private Size rawImageSize;
-  private YuvImage yuvImage;
-  private Rect rect;
-  private ChannelBufferOutputStream stream;
+    /* thread handling */
+    private Object streamLock;
+    private Queue<byte[]> frameQueue;
 
-  public CompressedImagePublisher(ConnectedNode connectedNode) {
 
-    //instantiating ros objects
-    NameResolver resolver = connectedNode.getResolver().newChild("/ball_mover/camera");
-    this.connectedNode = connectedNode;
+    public CompressedImagePublisher(ConnectedNode connectedNode) {
 
-    imagePublisher =
-        connectedNode.newPublisher(resolver.resolve("image/compressed"),
-            sensor_msgs.CompressedImage._TYPE);
+        //instantiating ros objects
+        NameResolver resolver = connectedNode.getResolver().newChild("/ball_mover/camera");
+        this.connectedNode = connectedNode;
 
-    cameraInfoPublisher =
-        connectedNode.newPublisher(resolver.resolve("camera_info"), sensor_msgs.CameraInfo._TYPE);
+        imagePublisher =
+                connectedNode.newPublisher(resolver.resolve("image/compressed"),
+                        sensor_msgs.CompressedImage._TYPE);
 
-    //instantiating stream buffer for image processing
-    stream = new ChannelBufferOutputStream(MessageBuffers.dynamicBuffer());
-  }
-
-  @Override
-  public void onNewRawImage(byte[] data, Size size) {
-//    if(skipFrame++ > 5) {
-//      skipFrame = 0;
-//      return;
-//    }
-    Preconditions.checkNotNull(data);
-    Preconditions.checkNotNull(size);
-
-    if (data != rawImageBuffer || !size.equals(rawImageSize)) {
-      rawImageBuffer = data;
-      rawImageSize = size;
-      yuvImage = new YuvImage(rawImageBuffer, ImageFormat.NV21, size.width, size.height, null);
-      rect = new Rect(0, 0, size.width, size.height);
+        //instantiating stream buffer for image processing
+        stream = new ChannelBufferOutputStream(MessageBuffers.dynamicBuffer());
+        streamLock = new Object();
+        frameQueue = new LinkedList<byte[]>();
     }
 
-    Time currentTime = connectedNode.getCurrentTime();
-    String frameId = "camera";
+    @Override
+    public void onNewRawImage(byte[] data, Size size) {
 
-    sensor_msgs.CompressedImage image = imagePublisher.newMessage();
-    image.setFormat("jpeg");
-    image.getHeader().setStamp(currentTime);
-    image.getHeader().setFrameId(frameId);
+        Preconditions.checkNotNull(data);
+        Preconditions.checkNotNull(size);
 
-    //********************
-    //shrinking for shipment to reduce latency
+        frameQueue.add(data);
+        if(scaled == null)
+            scaled = new byte[size.width / 2 * size.height / 2 * 3 / 4];
 
-    ByteArrayOutputStream output_stream=new ByteArrayOutputStream();
-    Preconditions.checkState(yuvImage.compressToJpeg(rect, 20, output_stream));
+        quarterYUV420(data, scaled, size.width, size.height);
+        YuvImage yuvImage = new YuvImage(scaled, ImageFormat.NV21, size.width / 4, size.height / 4, null);
 
-    int shrinked_width = (int)(SCALE_FACTOR * size.width);
-    int shrinked_height = (int)(SCALE_FACTOR * size.height);
+        if (rect == null)
+            rect = new Rect(0, 0, size.width / 4, size.height / 4);
 
-    Bitmap bitmap = BitmapFactory.decodeByteArray(output_stream.toByteArray(), 0, output_stream.size());
-    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, shrinked_width, shrinked_height, true);
-    ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, imageStream);
+        Time currentTime = connectedNode.getCurrentTime();
+        String frameId = "camera";
 
-    try {
-      stream.write(imageStream.toByteArray());
-    } catch (IOException e) {
-      e.printStackTrace();
+        sensor_msgs.CompressedImage image = imagePublisher.newMessage();
+        image.setFormat("jpeg");
+        image.getHeader().setStamp(currentTime);
+        image.getHeader().setFrameId(frameId);
+
+        synchronized (streamLock) {
+            Preconditions.checkState(yuvImage.compressToJpeg(rect, 20, stream));
+            image.setData(stream.buffer().copy());
+            stream.buffer().clear();
+        }
+
+        //LOCK IT
+        Thread.currentThread().setPriority(Thread.currentThread().getPriority()-1);
+        while (frameQueue.peek() != data);
+        Thread.currentThread().setPriority(Thread.currentThread().getPriority()+1);
+
+        imagePublisher.publish(image);
+        frameQueue.remove();
     }
 
-    image.setData(stream.buffer().copy());
-    stream.buffer().clear();
+    public static void quarterYUV420(byte[] data, byte[] yuv, int imageWidth, int imageHeight) {
 
-    /******************
-    //overlaying stuff to gather warping parameters
-    final SurfaceHolder holder = Odgboxtherapy.warpedView.getHolder();
+        // quarter yuma
+        int i = 0;
+        for (int y = 0; y < imageHeight; y += 4) {
+            for (int x = 0; x < imageWidth; x += 4) {
+                yuv[i] = data[y * imageWidth + x];
+                i++;
+            }
+        }
 
-    Canvas c = holder.lockCanvas();
-    if (holder != null && c != null) {
-
-      BitmapFromCompressedImage bf = new BitmapFromCompressedImage();
-      Bitmap bmp = bf.call(image);
-      Bitmap scaled = Bitmap.createScaledBitmap(bmp, (int) (bmp.getWidth() * xmag), (int) (bmp.getHeight() * ymag), false);
-
-      c.drawBitmap(scaled, xtrans, ytrans, null);
-
-      holder.unlockCanvasAndPost(c);
+        // quarter U and V color components
+        for (int y = 0; y < imageHeight / 2; y += 4) {
+            for (int x = 0; x < imageWidth; x += 8) {
+                yuv[i] = data[(imageWidth * imageHeight) + (y * imageWidth) + x];
+                i++;
+                yuv[i] = data[(imageWidth * imageHeight) + (y * imageWidth) + (x + 1)];
+                i++;
+            }
+        }
     }
-
-
-     /*****************
-
-    BitmapFromCompressedImage bf = new BitmapFromCompressedImage();
-
-    Bitmap bmp = bf.call(image);
-    if(bmp != null) {
-      Log.d("myODG", MyRosCameraPreviewView.instance.getWidth() + "..." + MyRosCameraPreviewView.instance.getHeight());
-      Bitmap scaled = Bitmap.createScaledBitmap(bmp, (int) (bmp.getWidth() * 2), (int) (bmp.getHeight() * 1), false);
-
-      Bitmap background = Bitmap.createBitmap(
-              MyRosCameraPreviewView.instance.getWidth(),
-              MyRosCameraPreviewView.instance.getHeight(),
-              scaled.getConfig());
-
-      Canvas c = new Canvas(background);
-      c.drawBitmap(bmp, 0, 0, null);
-
-      MyRosCameraPreviewView.instance.draw(c);
-    }
-
-    /***********************/
-
-    imagePublisher.publish(image);
-
-    sensor_msgs.CameraInfo cameraInfo = cameraInfoPublisher.newMessage();
-    cameraInfo.getHeader().setStamp(currentTime);
-    cameraInfo.getHeader().setFrameId(frameId);
-
-    cameraInfo.setWidth(shrinked_width);
-    cameraInfo.setHeight(shrinked_height);
-    cameraInfoPublisher.publish(cameraInfo);
-  }
-
-  byte[] shrink(byte[] data, Size size) {
-
-    if(data == null)
-      return null;
-
-    ByteArrayOutputStream output_stream = new ByteArrayOutputStream();
-    YuvImage image=new YuvImage(data, ImageFormat.NV21, size.width, size.height,null);
-    image.compressToJpeg(new Rect(0, 0, size.width, size.height), 60, output_stream);
-
-    size.width = (int)(SCALE_FACTOR * size.width);
-    size.height = (int)(SCALE_FACTOR * size.height);
-
-    Bitmap bitmap = BitmapFactory.decodeByteArray(output_stream.toByteArray(), 0, output_stream.size());
-    Bitmap scaledBitmap=Bitmap.createScaledBitmap(bitmap, size.width, size.height, true);
-    ByteArrayOutputStream imageStream=new ByteArrayOutputStream();
-    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, imageStream);
-
-    return imageStream.toByteArray();
-  }
-
 }

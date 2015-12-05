@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.os.ConditionVariable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -60,7 +61,7 @@ public class GameView extends View {
         }
 
         //calls next draw
-        //invalidate();
+        invalidate();
     }
 
     /**
@@ -97,7 +98,7 @@ public class GameView extends View {
     }
 
     void setupPaint() {
-        //setBackgroundColor(Color.BLACK);
+        setBackgroundColor(Color.BLACK);
 
         paint = new Paint();
         paint.setStyle(Paint.Style.FILL);

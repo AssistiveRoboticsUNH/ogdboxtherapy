@@ -9,7 +9,7 @@ public class Ball {
     public static final int DIAMETER = 100;
     public final int SCREEN_WIDTH, SCREEN_HEIGHT;
     public static final int NOT_FOUND_COORD = -1337;
-    public static final double SPEED = 80;
+    public static final double SPEED = 70;
 
     /*the coordinates of center point of the object*/
     private double x, y, targetX, targetY;
